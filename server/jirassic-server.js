@@ -652,8 +652,8 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "POST" && req.url === "/api/jira/comment") {
     try {
       const { key, text } = JSON.parse(await readBody(req));
-      if (typeof key !== "string" || !key.trim()) {
-        json({ error: "Missing issue key" }, 400);
+      if (typeof key !== "string" || !/^[A-Z][A-Z0-9]*-\d+$/.test(key.trim())) {
+        json({ error: "Invalid issue key" }, 400);
         return;
       }
       if (typeof text !== "string" || !text.trim()) {
