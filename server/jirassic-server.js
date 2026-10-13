@@ -652,13 +652,25 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "POST" && req.url === "/api/jira/comment") {
     try {
       const { key, text } = JSON.parse(await readBody(req));
-      const email = process.env.JIRA_EMAIL;
-      const token = process.env.JIRA_API_TOKEN;
-      const auth = Buffer.from(`${email}:${token}`).toString("base64");
+      if (typeof key !== "string" || !key.trim()) {
+        json({ error: "Missing issue key" }, 400);
+        return;
+      }
+      if (typeof text !== "string" || !text.trim()) {
+        json({ error: "Comment text required" }, 400);
+        return;
+      }
       const content = text
         .split("\n")
         .filter((line) => line.trim())
         .map((line) => ({ type: "paragraph", content: [{ type: "text", text: line }] }));
+      if (!content.length) {
+        json({ error: "Comment text required" }, 400);
+        return;
+      }
+      const email = process.env.JIRA_EMAIL;
+      const token = process.env.JIRA_API_TOKEN;
+      const auth = Buffer.from(`${email}:${token}`).toString("base64");
       const resp = await fetch(`https://${JIRA_SITE}/rest/api/3/issue/${encodeURIComponent(key)}/comment`, {
         method: "POST",
         headers: {
